@@ -1,76 +1,56 @@
 #include <sys/wait.h>
-
 #include <stdio.h>
-
 #include <stdlib.h>
-
 #include <fcntl.h>
-
 #include <unistd.h>
 
-main() {
-
-//changing home directory to working directory
-
-chdir("UR_tests");
-
-//file descriptor | channel descriptor | process's id
-
-int f, fd[2], id_1, id_2, id_3;
-
-printf("P0: begin [%d]\n", getpid());
-
-//creating pipe
-
-if (pipe(fd) == -1)
-
+main() 
 {
 
-fprintf(stderr, "Pipe didn't created.\n");
+  //changing home directory to working directory
 
-exit(1);
+  chdir("UR_tests");
 
-}
+  //file descriptor | channel descriptor | process's id
 
-printf("P0: Pipe created\n");
+  int f, fd[2], id_1, id_2, id_3;
 
-//create fork P1
+  printf("P0: begin [%d]\n", getpid());
 
-id_1 = fork();
+  //creating pipe
+  if (pipe(fd) == -1)
+  {
+    fprintf(stderr, "Pipe didn't created.\n");
+    exit(1);
+  }
+  printf("P0: Pipe created\n");
 
-if (id_1 == 0) {
+  //create fork P1
+  id_1 = fork();
+  if (id_1 == 0) {
+  printf("P1: begin\n");
 
-printf("P1: begin\n");
+  //opening file a.txt
+  f = open("a.txt", O_RDONLY);
+  printf("P1: open a.txt\n");
 
-//opening file a.txt
+  //closing standard read file
+  close(0);
+    
+  //making file read descriptor the standart read file
+  fcntl(f, F_DUPFD, 0);
 
-f = open("a.txt", O_RDONLY);
+  //closing standard write file
+  close(1);
 
-printf("P1: open a.txt\n");
+  //making channel write descriptor the standart write file
+  fcntl(fd[1], F_DUPFD, 1);
 
-//closing standard read file
+  //calling tr -d "[p-z]" function
+  execl("/usr/bin/tr", "tr", "-d", "\"[p-z]\"", 0);
 
-close(0);
-
-//making file read descriptor the standart read file
-
-fcntl(f, F_DUPFD, 0);
-
-//closing standard write file
-
-close(1);
-
-//making channel write descriptor the standart write file
-
-fcntl(fd[1], F_DUPFD, 1);
-
-//calling tr -d "[p-z]" function
-
-execl("/usr/bin/tr", "tr", "-d", "\"[p-z]\"", 0);
-
-//P1 exit
-
-exit(0);
+  //P1 exit
+  exit(0);
 
 }
 
